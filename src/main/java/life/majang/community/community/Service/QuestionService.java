@@ -71,8 +71,49 @@ public class QuestionService {
 
     public QuestionDTO getById(Integer id) {
        Question question= questionMapper.getById(id);
+//       if(question==null){
+//           throw new ClassCastException(CustomizeErrorCode.QUESTION_NOT_FOUND.toString());
+//       }
         QuestionDTO questionDTO=new QuestionDTO();
         BeanUtils.copyProperties(question,questionDTO);
+        User user = userMapper.findById(question.getCreator());
+        questionDTO.setUser(user);
         return questionDTO;
+    }
+
+    public void createOrUpdate(Question question) {
+        if(question.getId()==null){
+            //创建
+            question.setGmtModified(System.currentTimeMillis());
+            question.setGmtCreate(question.getGmtModified());
+            questionMapper.create(question);
+        }else {
+            //更新
+            Question updateQuestion=new Question();
+            updateQuestion.setGmtModified(System.currentTimeMillis());
+            updateQuestion.setGmtCreate(question.getGmtCreate());
+            updateQuestion.setTitle(question.getTitle());
+            updateQuestion.setTag(question.getTag());
+            updateQuestion.setDescription(question.getDescription());
+            List<Question> questionList= questionMapper.update(question);
+//            if(questionList==null){
+//                throw new ClassCastException(CustomizeErrorCode.QUESTION_NOT_FOUND.toString());
+//            }
+
+        }
+    }
+
+    public void incView(Integer id) {
+        Question question=questionMapper.getById(id);
+        Question updateQuestion =new Question();
+        updateQuestion.setDescription(question.getDescription());
+        updateQuestion.setTag(question.getTag());
+        updateQuestion.setGmtModified(question.getGmtModified());
+        updateQuestion.setGmtCreate(question.getGmtCreate());
+        updateQuestion.setCreator(question.getCreator());
+        updateQuestion.setTitle(question.getTitle());
+        updateQuestion.setViewCount(question.getViewCount());
+        updateQuestion.setId(question.getId());
+        questionMapper.updateViewCount(updateQuestion);
     }
 }

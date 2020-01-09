@@ -33,7 +33,7 @@ public class ProfileController {
             for (Cookie cookie:cookies){
                 if(cookie.getName().equals("token")){
                     String token=cookie.getValue();
-                     user=userMapper.findByToken("cff30d0d-d812-42c6-98a7-5c58d576e125");
+                     user=userMapper.findByToken(token);
                     if(user!=null){
                         request.setAttribute("user",user);
                     }

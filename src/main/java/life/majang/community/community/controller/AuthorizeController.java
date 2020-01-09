@@ -4,6 +4,7 @@ package life.majang.community.community.controller;
 import life.majang.community.community.Dto.AccessTokenDTO;
 import life.majang.community.community.Dto.GithubUser;
 import life.majang.community.community.Mapper.UserMapper;
+import life.majang.community.community.Service.UserService;
 import life.majang.community.community.model.User;
 import life.majang.community.community.provider.GithubProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,8 @@ public class AuthorizeController {
     private String clientId;
     @Value("${github.redirectUri}")
     private String redirectUri;
+    @Autowired
+    private UserService userService;
 
 
     @GetMapping("/callback")
@@ -39,29 +42,37 @@ public class AuthorizeController {
                            HttpServletRequest requset,
                            HttpServletResponse response
     ){
-       AccessTokenDTO accessTokenDTO = new AccessTokenDTO();
-       accessTokenDTO.setClient_id(clientId);
-       accessTokenDTO.setClient_secret(clientSecrect);
-       accessTokenDTO.setCode(code);
-       accessTokenDTO.setRedirect_uri(redirectUri);
-       accessTokenDTO.setState(state);
-       String accessToken = githubProvider.getAccessToken(accessTokenDTO);
-       GithubUser gethubuser = githubProvider.getUser(accessToken);
-       if(gethubuser!=null){
-           User user = new User();
-           String token = UUID.randomUUID().toString();
-           user.setToken(token);
-           user.setName(gethubuser.getName());
-           user.setAccountId(Integer.parseInt(String.valueOf(gethubuser.getId())));
-           user.setGmtCreate(System.currentTimeMillis());
-           user.setGmtCreate(user.getGmtModified());
-           user.setAvatarUrl(gethubuser.getAvatarUrl());
-           //userMapper.insert(user);
-           requset.getSession().setAttribute("user",gethubuser);
-           response.addCookie(new Cookie("token",token));
-           return "redirect:/";
-       }else {
-           return "redirect:/";
-       }
+        AccessTokenDTO accessTokenDTO = new AccessTokenDTO();
+        accessTokenDTO.setClient_id(clientId);
+        accessTokenDTO.setClient_secret(clientSecrect);
+        accessTokenDTO.setCode(code);
+        accessTokenDTO.setRedirect_uri(redirectUri);
+        accessTokenDTO.setState(state);
+        String accessToken = githubProvider.getAccessToken(accessTokenDTO);
+        GithubUser gethubuser = githubProvider.getUser(accessToken);
+        if(gethubuser!=null){
+            User user = new User();
+            String token = UUID.randomUUID().toString();
+            user.setToken(token);
+            user.setName(gethubuser.getName());
+            user.setAccountId(Integer.parseInt(String.valueOf(gethubuser.getId())));
+            user.setAvatarUrl(gethubuser.getAvatarUrl());
+            userService.createOrUpdate(user);
+            requset.getSession().setAttribute("user",gethubuser);
+            response.addCookie(new Cookie("token",token));
+            return "redirect:/";
+        }else {
+            return "redirect:/";
+        }
+    }
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request,
+                         HttpServletResponse response
+    ){
+        request.getSession().removeAttribute("user");
+        Cookie cookie = new Cookie("token",null);
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+        return "redirect:/";
     }
 }
